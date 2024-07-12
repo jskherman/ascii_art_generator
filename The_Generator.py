@@ -37,6 +37,8 @@ with acol2:
                 use_column_width=True,
             )
 
+st.write("")
+
 st.subheader("Step 2: Define Generator Parameters")
 
 bcol1, bcol2 = st.columns(2)
