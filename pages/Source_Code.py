@@ -10,6 +10,13 @@ with st.expander("ASCII Art Generator Code", expanded=True):
         # code_file = st.text_area("Generator Code Editor", height=1024, value=f.read())
         st.code(f.read(), language="python")
 
+download_file = st.download_button(
+    label="Download ASCII Art Generator Script",
+    data=open("ascii_art_generator.py", "rb").read(),
+    file_name="ascii_art_generator.py",
+)
+
+
 # write_file = st.button("Save to File")
 
 # if write_file:
