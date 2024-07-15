@@ -217,6 +217,8 @@ def get_ascii_char(intensity):
     """
     ascii_chars = " .,:-=+*#%@"
     # ascii_chars = " .:coP0?@■"
+    # ascii_chars = "⠀⠁⠉⠛⠿⣿█"
+
     index = int(intensity / 256 * len(ascii_chars))
     return ascii_chars[min(index, len(ascii_chars) - 1)]
 
