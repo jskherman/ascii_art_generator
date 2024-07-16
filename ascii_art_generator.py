@@ -184,30 +184,32 @@ def quantize_directions(directions):
     Returns
     -------
     numpy.ndarray
-        Quantized directions (0: vertical, 1: diagonal /, 2: horizontal, 3: diagonal \\\\).
+        Quantized directions (0: horizontal, 1: vertical, 2: diagonal /, 3: diagonal \\\\).
     """
     quantized = np.zeros_like(directions, dtype=int)
-    angles = np.abs(directions) % (2 * np.pi)  # Wrap angles within the range [0, 2π]
 
-    # Convert angles greater than π to their negative equivalents
-    angles[angles > np.pi] -= 2 * np.pi
+    # Normalize angles to range [0, 2 * pi)
+    angles = np.mod(directions, 2 * np.pi)
 
-    # Quantize angles into 4 categories based on their value in radians
-    quantized[
-        (angles < np.pi / 8) | (angles >= 7 * np.pi / 8) | (angles < -7 * np.pi / 8)
-    ] = 0  # Vertical
-    quantized[
-        (angles >= np.pi / 8) & (angles < 3 * np.pi / 8)
-        | (angles <= -5 * np.pi / 8) & (angles > -7 * np.pi / 8)
-    ] = 1  # Diagonal (/)
-    quantized[
-        (angles >= 3 * np.pi / 8) & (angles < 5 * np.pi / 8)
-        | (angles <= -3 * np.pi / 8) & (angles > -5 * np.pi / 8)
-    ] = 2  # Horizontal
-    quantized[
-        (angles >= 5 * np.pi / 8) & (angles < 7 * np.pi / 8)
-        | (angles <= -np.pi / 8) & (angles > -3 * np.pi / 8)
-    ] = 3  # Diagonal (\)
+    # Calculate the tangent of each angle
+    tangents = np.tan(angles)
+
+    # Define thresholds
+    horizontal_thresh = 0.0985  # tan(pi/32)
+    vertical_thresh = 10.153  # tan(pi * 15/32)
+
+    # Horizontal: abs(tan(angle)) <= 0.0985
+    quantized[np.abs(tangents) <= horizontal_thresh] = 0
+
+    # Vertical: abs(tan(angle)) >= 10.153 or infinity
+    quantized[np.abs(tangents) >= vertical_thresh] = 2
+    quantized[np.isinf(tangents)] = 2
+
+    # Diagonal (/): 10.153 > tan(angle) > 0.0985
+    quantized[(tangents > horizontal_thresh) & (tangents < vertical_thresh)] = 3
+
+    # Diagonal (\): -10.153 < tan(angle) < -0.0985
+    quantized[(tangents < -horizontal_thresh) & (tangents > -vertical_thresh)] = 1
 
     return quantized
 
@@ -229,8 +231,8 @@ def get_ascii_char(intensity):
     str
         Corresponding ASCII character.
     """
-    # ascii_chars = " .,:=+*#%@"
-    ascii_chars = " .:coP0?@■"
+    ascii_chars = " .,:=+*#%@"
+    # ascii_chars = " .:coP0?@■"
     # ascii_chars = "⠀⠁⠉⠛⠿⣿█"
 
     index = int(intensity / 256 * len(ascii_chars))
