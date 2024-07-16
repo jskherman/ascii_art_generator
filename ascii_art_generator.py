@@ -187,13 +187,27 @@ def quantize_directions(directions):
         Quantized directions (0: vertical, 1: diagonal /, 2: horizontal, 3: diagonal \\\\).
     """
     quantized = np.zeros_like(directions, dtype=int)
-    angles = np.abs(directions)
+    angles = np.abs(directions) % (2 * np.pi)  # Wrap angles within the range [0, 2π]
+
+    # Convert angles greater than π to their negative equivalents
+    angles[angles > np.pi] -= 2 * np.pi
 
     # Quantize angles into 4 categories based on their value in radians
-    quantized[(angles < np.pi / 8) | (angles >= 7 * np.pi / 8)] = 0  # Vertical
-    quantized[(angles >= np.pi / 8) & (angles < 3 * np.pi / 8)] = 1  # Diagonal (/)
-    quantized[(angles >= 3 * np.pi / 8) & (angles < 5 * np.pi / 8)] = 2  # Horizontal
-    quantized[(angles >= 5 * np.pi / 8) & (angles < 7 * np.pi / 8)] = 3  # Diagonal (\)
+    quantized[
+        (angles < np.pi / 8) | (angles >= 7 * np.pi / 8) | (angles < -7 * np.pi / 8)
+    ] = 0  # Vertical
+    quantized[
+        (angles >= np.pi / 8) & (angles < 3 * np.pi / 8)
+        | (angles <= -5 * np.pi / 8) & (angles > -7 * np.pi / 8)
+    ] = 1  # Diagonal (/)
+    quantized[
+        (angles >= 3 * np.pi / 8) & (angles < 5 * np.pi / 8)
+        | (angles <= -3 * np.pi / 8) & (angles > -5 * np.pi / 8)
+    ] = 2  # Horizontal
+    quantized[
+        (angles >= 5 * np.pi / 8) & (angles < 7 * np.pi / 8)
+        | (angles <= -np.pi / 8) & (angles > -3 * np.pi / 8)
+    ] = 3  # Diagonal (\)
 
     return quantized
 
@@ -215,8 +229,8 @@ def get_ascii_char(intensity):
     str
         Corresponding ASCII character.
     """
-    ascii_chars = " .,:-=+*#%@"
-    # ascii_chars = " .:coP0?@■"
+    # ascii_chars = " .,:=+*#%@"
+    ascii_chars = " .:coP0?@■"
     # ascii_chars = "⠀⠁⠉⠛⠿⣿█"
 
     index = int(intensity / 256 * len(ascii_chars))
@@ -314,7 +328,7 @@ def image_to_ascii(
                 elif direction == 1:
                     line.append("/")
                 elif direction == 2:
-                    line.append("-")
+                    line.append("—")
                 elif direction == 3:
                     line.append("\\")
             else:
